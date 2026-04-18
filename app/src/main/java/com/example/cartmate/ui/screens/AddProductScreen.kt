@@ -16,28 +16,62 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.cartmate.navigation.AppRoutes
+import com.example.cartmate.ui.components.ScreenTopBar
+import com.example.cartmate.ui.viewmodel.ProductViewModel
+import com.example.cartmate.ui.viewmodel.ViewModelProvider
 
-private val PrimaryGreen = Color(0xFF16A34A)
 private val InputShape = RoundedCornerShape(14.dp)
 private val ButtonShape = RoundedCornerShape(14.dp)
 
 @Composable
-fun AddProductScreen(navController: NavController) {
-    var name by rememberSaveable { mutableStateOf("") }
-    var quantity by rememberSaveable { mutableStateOf("") }
-    var notes by rememberSaveable { mutableStateOf("") }
+fun AddProductScreen(
+    navController: NavController,
+    listId: Long,
+    productId: Long
+) {
+    val context = LocalContext.current
+    val productViewModel: ProductViewModel = viewModel(
+        factory = ViewModelProvider.provideProductViewModelFactory(context)
+    )
+    val uiState by productViewModel.addProductUiState.collectAsState()
+
+    LaunchedEffect(listId, productId) {
+        productViewModel.prepareAddProductForm(productId)
+    }
+
+    LaunchedEffect(uiState.saveSuccess) {
+        if (uiState.saveSuccess) {
+            val detailRoute = AppRoutes.detailRoute(listId)
+            val popped = navController.popBackStack(
+                route = detailRoute,
+                inclusive = false,
+                saveState = false
+            )
+            if (!popped) {
+                navController.popBackStack()
+            }
+            productViewModel.consumeSaveSuccess()
+        }
+    }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            ScreenTopBar(
+                title = if (uiState.isEditing) "Editar Producto" else "Agregar Producto",
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -46,75 +80,80 @@ fun AddProductScreen(navController: NavController) {
                 .padding(horizontal = 24.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.Top
         ) {
-            Text(
-                text = "Agregar Producto",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
+                value = uiState.name,
+                onValueChange = productViewModel::onNameChange,
                 modifier = Modifier.fillMaxWidth(),
                 shape = InputShape,
                 singleLine = true,
                 label = { Text("Nombre") },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryGreen,
-                    focusedLabelColor = PrimaryGreen,
-                    cursorColor = PrimaryGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = quantity,
-                onValueChange = { quantity = it },
+                value = uiState.quantity,
+                onValueChange = productViewModel::onQuantityChange,
                 modifier = Modifier.fillMaxWidth(),
                 shape = InputShape,
                 singleLine = true,
                 label = { Text("Cantidad") },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryGreen,
-                    focusedLabelColor = PrimaryGreen,
-                    cursorColor = PrimaryGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 )
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = notes,
-                onValueChange = { notes = it },
+                value = uiState.notes,
+                onValueChange = productViewModel::onNotesChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(128.dp),
                 shape = InputShape,
                 label = { Text("Notas") },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryGreen,
-                    focusedLabelColor = PrimaryGreen,
-                    cursorColor = PrimaryGreen
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedLabelColor = MaterialTheme.colorScheme.primary,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 )
             )
+
+            if (uiState.errorMessage != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = uiState.errorMessage.orEmpty(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { navController.navigate("detail") },
+                onClick = { productViewModel.saveProduct(listId) },
+                enabled = !uiState.isSaving,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
                 shape = ButtonShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryGreen,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Text(
-                    text = "Guardar Producto",
+                    text = if (uiState.isSaving) "Guardando..." else "Guardar Producto",
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
             }

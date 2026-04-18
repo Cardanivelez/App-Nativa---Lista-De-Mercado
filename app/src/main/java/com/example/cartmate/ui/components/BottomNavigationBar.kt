@@ -1,18 +1,29 @@
 package com.example.cartmate.ui.components
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 
 private data class BottomTab(
     val label: String,
-    val route: String
+    val route: String,
+    val icon: ImageVector
 )
 
 @Composable
@@ -21,10 +32,10 @@ fun BottomNavigationBar(
     currentRoute: String
 ) {
     val tabs = listOf(
-        BottomTab("Inicio", "home"),
-        BottomTab("Perfil", "profile"),
-        BottomTab("Configuración", "settings"),
-        BottomTab("Créditos", "credits")
+        BottomTab("Inicio", "home", Icons.Default.Home),
+        BottomTab("Perfil", "profile", Icons.Default.Person),
+        BottomTab("Configuración", "settings", Icons.Default.Settings),
+        BottomTab("Créditos", "credits", Icons.Default.Info)
     )
 
     NavigationBar {
@@ -34,12 +45,35 @@ fun BottomNavigationBar(
                 onClick = {
                     if (currentRoute != tab.route) {
                         navController.navigate(tab.route) {
+                            popUpTo(navController.graph.findStartDestination().id)
                             launchSingleTop = true
+                            restoreState = true
                         }
                     }
                 },
-                icon = { Box(modifier = Modifier.size(0.dp)) },
-                label = { Text(text = tab.label) }
+                icon = {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = tab.label
+                    )
+                },
+                label = {
+                    Text(
+                        text = tab.label,
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        softWrap = false,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
     }

@@ -1,147 +1,236 @@
 package com.example.cartmate.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-private val PrimaryGreen = Color(0xFF16A34A)
+import com.example.cartmate.data.local.entity.ProductEntity
+import com.example.cartmate.navigation.AppRoutes
+import com.example.cartmate.ui.components.ScreenTopBar
+import com.example.cartmate.ui.viewmodel.ProductViewModel
+import com.example.cartmate.ui.viewmodel.ViewModelProvider
+
 private val ProductCardShape = RoundedCornerShape(16.dp)
 
-private data class ProductItem(
-    val name: String,
-    val quantity: String,
-    var purchased: Boolean
-)
-
 @Composable
-fun DetailScreen(navController: NavController) {
-    val products = remember {
-        mutableStateListOf(
-            ProductItem(name = "Leche entera", quantity = "2 litros", purchased = true),
-            ProductItem(name = "Pan integral", quantity = "1 paquete", purchased = false),
-            ProductItem(name = "Huevos", quantity = "12 unidades", purchased = false),
-            ProductItem(name = "Manzanas", quantity = "1 kg", purchased = true)
-        )
+fun DetailScreen(
+    navController: NavController,
+    listId: Long
+) {
+    val context = LocalContext.current
+    val productViewModel: ProductViewModel = viewModel(
+        factory = ViewModelProvider.provideProductViewModelFactory(context)
+    )
+
+    val uiState by productViewModel.detailUiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(listId) {
+        productViewModel.observeProducts(listId)
+    }
+
+    LaunchedEffect(uiState.listCompletionCelebration) {
+        if (uiState.listCompletionCelebration) {
+            delay(2800)
+            productViewModel.consumeListCompletionCelebration()
+        }
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            ScreenTopBar(
+                title = "Detalle de productos",
+                onBackClick = { navController.popBackStack() }
+            )
+        }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp, vertical = 20.dp)
+                .padding(24.dp)
         ) {
-            Text(
-                text = "Detalle de productos",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            ListCompletedBanner(uiState.listCompletionCelebration)
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                itemsIndexed(products) { index, product ->
-                    ProductCard(
-                        product = product,
-                        onCheckedChange = { checked ->
-                            products[index] = product.copy(purchased = checked)
-                        }
-                    )
+            if (uiState.products.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    DetailProductsEmptyState()
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(uiState.products, key = { it.id }) { product ->
+                        ProductCard(
+                            product = product,
+                            onCheckedChange = {
+                                productViewModel.updateCheckedState(product.id, it)
+                            },
+                            onClick = {
+                                navController.navigate("productDetail/${product.id}")
+                            },
+                            onDelete = {
+                                val snapshot = product
+                                scope.launch {
+                                    productViewModel.deleteProduct(snapshot)
+                                    val result = snackbarHostState.showSnackbar(
+                                        "Producto eliminado",
+                                        "Deshacer"
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        productViewModel.restoreProductAfterUndo(snapshot)
+                                    }
+                                }
+                            }
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { navController.navigate("addProduct") },
+                onClick = {
+                    navController.navigate(AppRoutes.addProductRoute(listId))
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryGreen,
-                    contentColor = Color.White
-                )
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text(
-                    text = "Agregar Producto",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                )
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Agregar Producto")
             }
         }
     }
 }
 
 @Composable
+private fun DetailProductsEmptyState() {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            Icons.Default.ShoppingCart,
+            contentDescription = null,
+            modifier = Modifier.size(72.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            "Aún no hay productos",
+            style = MaterialTheme.typography.titleLarge
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            "Agrega productos para comenzar",
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
+private fun ListCompletedBanner(visible: Boolean) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + scaleIn(),
+        exit = fadeOut() + scaleOut()
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.primaryContainer
+        ) {
+            Text(
+                "¡Lista completada!",
+                modifier = Modifier.padding(12.dp),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        }
+    }
+}
+
+@Composable
 private fun ProductCard(
-    product: ProductItem,
-    onCheckedChange: (Boolean) -> Unit
+    product: ProductEntity,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    onDelete: () -> Unit
 ) {
+
+    val line = if (product.isChecked) TextDecoration.LineThrough else TextDecoration.None
+
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = ProductCardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = ProductCardShape
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Checkbox(
-                checked = product.purchased,
+                checked = product.isChecked,
                 onCheckedChange = onCheckedChange
             )
 
             Column(
-                modifier = Modifier.padding(start = 10.dp)
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onClick() }
             ) {
                 Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    product.name,
+                    textDecoration = line,
+                    fontWeight = FontWeight.SemiBold
                 )
-                Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = product.quantity,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    product.quantity,
+                    textDecoration = line
                 )
+            }
+
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = null)
             }
         }
     }

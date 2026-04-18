@@ -1,5 +1,6 @@
 package com.example.cartmate.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,62 +14,104 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.cartmate.ui.viewmodel.AuthViewModel
+import com.example.cartmate.ui.viewmodel.ViewModelProvider
 
-private val PrimaryGreen = Color(0xFF16A34A)
 private val FieldShape = RoundedCornerShape(14.dp)
 private val ButtonShape = RoundedCornerShape(14.dp)
 
 @Composable
 fun RegisterScreen(navController: NavController) {
-    var fullName by rememberSaveable { mutableStateOf("") }
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var confirmPassword by rememberSaveable { mutableStateOf("") }
+    val context = LocalContext.current
+    val authViewModel: AuthViewModel = viewModel(
+        factory = ViewModelProvider.provideAuthViewModelFactory(context)
+    )
+    val uiState by authViewModel.registerUiState.collectAsState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    LaunchedEffect(uiState.registerSuccess) {
+        if (uiState.registerSuccess) {
+            authViewModel.consumeRegisterSuccess()
+            navController.navigate("login") {
+                popUpTo("register") { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
     ) {
-        RegisterHeader()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            RegisterHeader()
 
-        Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-        RegisterFields(
-            fullName = fullName,
-            email = email,
-            password = password,
-            confirmPassword = confirmPassword,
-            onFullNameChange = { fullName = it },
-            onEmailChange = { email = it },
-            onPasswordChange = { password = it },
-            onConfirmPasswordChange = { confirmPassword = it }
-        )
+            RegisterFields(
+                fullName = uiState.fullName,
+                email = uiState.email,
+                password = uiState.password,
+                confirmPassword = uiState.confirmPassword,
+                emailValidationError = uiState.emailValidationError,
+                passwordValidationError = uiState.passwordValidationError,
+                confirmPasswordValidationError = uiState.confirmPasswordValidationError,
+                onFullNameChange = authViewModel::onRegisterNameChange,
+                onEmailChange = authViewModel::onRegisterEmailChange,
+                onPasswordChange = authViewModel::onRegisterPasswordChange,
+                onConfirmPasswordChange = authViewModel::onRegisterConfirmPasswordChange
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-        RegisterPrimaryButton(onClick = { navController.navigate("login") })
+            RegisterPrimaryButton(
+                isLoading = uiState.isLoading,
+                enabled = uiState.isRegisterFormValid,
+                onClick = authViewModel::register
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            if (uiState.errorMessage != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = uiState.errorMessage.orEmpty(),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
 
-        LoginTextButton(onClick = { navController.navigate("login") })
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = "¿Ya tienes cuenta? Inicia sesión",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate("login") }
+                    .padding(vertical = 8.dp),
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 
@@ -83,7 +126,7 @@ private fun RegisterHeader() {
     Text(
         text = "Completa tus datos para comenzar",
         style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = MaterialTheme.colorScheme.onSurface,
         textAlign = TextAlign.Center
     )
 }
@@ -94,6 +137,9 @@ private fun RegisterFields(
     email: String,
     password: String,
     confirmPassword: String,
+    emailValidationError: String?,
+    passwordValidationError: String?,
+    confirmPasswordValidationError: String?,
     onFullNameChange: (String) -> Unit,
     onEmailChange: (String) -> Unit,
     onPasswordChange: (String) -> Unit,
@@ -108,9 +154,9 @@ private fun RegisterFields(
         label = { Text("Nombre completo") },
         placeholder = { Text("Juan Perez") },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PrimaryGreen,
-            focusedLabelColor = PrimaryGreen,
-            cursorColor = PrimaryGreen
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            cursorColor = MaterialTheme.colorScheme.primary
         )
     )
 
@@ -124,10 +170,20 @@ private fun RegisterFields(
         singleLine = true,
         label = { Text("Email") },
         placeholder = { Text("tu@email.com") },
+        isError = emailValidationError != null,
+        supportingText = emailValidationError?.let { msg ->
+            {
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PrimaryGreen,
-            focusedLabelColor = PrimaryGreen,
-            cursorColor = PrimaryGreen
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            cursorColor = MaterialTheme.colorScheme.primary
         )
     )
 
@@ -139,12 +195,22 @@ private fun RegisterFields(
         modifier = Modifier.fillMaxWidth(),
         shape = FieldShape,
         singleLine = true,
-        label = { Text("Contrasena") },
+        label = { Text("Contraseña") },
         visualTransformation = PasswordVisualTransformation(),
+        isError = passwordValidationError != null,
+        supportingText = passwordValidationError?.let { msg ->
+            {
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PrimaryGreen,
-            focusedLabelColor = PrimaryGreen,
-            cursorColor = PrimaryGreen
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            cursorColor = MaterialTheme.colorScheme.primary
         )
     )
 
@@ -156,43 +222,47 @@ private fun RegisterFields(
         modifier = Modifier.fillMaxWidth(),
         shape = FieldShape,
         singleLine = true,
-        label = { Text("Confirmar contrasena") },
+        label = { Text("Confirmar contraseña") },
         visualTransformation = PasswordVisualTransformation(),
+        isError = confirmPasswordValidationError != null,
+        supportingText = confirmPasswordValidationError?.let { msg ->
+            {
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        },
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PrimaryGreen,
-            focusedLabelColor = PrimaryGreen,
-            cursorColor = PrimaryGreen
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedLabelColor = MaterialTheme.colorScheme.primary,
+            cursorColor = MaterialTheme.colorScheme.primary
         )
     )
 }
 
 @Composable
-private fun RegisterPrimaryButton(onClick: () -> Unit) {
+private fun RegisterPrimaryButton(
+    isLoading: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
     Button(
         onClick = onClick,
+        enabled = enabled && !isLoading,
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp),
         shape = ButtonShape,
         colors = ButtonDefaults.buttonColors(
-            containerColor = PrimaryGreen,
-            contentColor = Color.White
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Text(
-            text = "Registrarse",
+            text = if (isLoading) "Guardando..." else "Registrarse",
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-        )
-    }
-}
-
-@Composable
-private fun LoginTextButton(onClick: () -> Unit) {
-    TextButton(onClick = onClick) {
-        Text(
-            text = "Inicia sesion",
-            color = PrimaryGreen,
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
         )
     }
 }

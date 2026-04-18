@@ -1,5 +1,6 @@
 package com.example.cartmate.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,66 +14,90 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cartmate.ui.components.BottomNavigationBar
+import com.example.cartmate.ui.viewmodel.SettingsViewModel
+import com.example.cartmate.ui.viewmodel.ThemeViewModel
+import com.example.cartmate.ui.viewmodel.ViewModelProvider
 
-private val PrimaryGreen = Color(0xFF16A34A)
 private val SettingsCardShape = RoundedCornerShape(16.dp)
 
 @Composable
 fun SettingsScreen(navController: NavController) {
-    var darkModeEnabled by rememberSaveable { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    val settingsViewModel: SettingsViewModel = viewModel(
+        factory = ViewModelProvider.provideSettingsViewModelFactory(context)
+    )
+
+    val themeViewModel: ThemeViewModel = viewModel(
+        factory = ViewModelProvider.provideThemeViewModelFactory(context)
+    )
+
+    val settingsState by settingsViewModel.uiState.collectAsState()
+    val themeState by themeViewModel.uiState.collectAsState()
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            BottomNavigationBar(navController = navController, currentRoute = "settings")
+            BottomNavigationBar(
+                navController = navController,
+                currentRoute = "settings"
+            )
         }
     ) { innerPadding ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
+
             Text(
                 text = "Configuración",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold
+                )
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            SettingsActionCard(title = "Cambiar nombre")
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            SettingsActionCard(title = "Cambiar contraseña")
+            PasswordChangeCard(
+                newPassword = settingsState.newPassword,
+                isSaving = settingsState.isSavingPassword,
+                successMessage = settingsState.passwordSuccessMessage,
+                errorMessage = settingsState.errorMessage,
+                onPasswordChange = settingsViewModel::onPasswordChange,
+                onChangePasswordClick = settingsViewModel::changePassword
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             SettingsSwitchCard(
                 title = "Modo oscuro",
-                checked = darkModeEnabled,
-                onCheckedChange = { darkModeEnabled = it }
+                checked = themeState.isDarkModeEnabled,
+                onCheckedChange = themeViewModel::setDarkModeEnabled
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
                 onClick = {
+                    settingsViewModel.logout()
                     navController.navigate("login") {
                         popUpTo("login") { inclusive = true }
                         launchSingleTop = true
@@ -83,13 +108,15 @@ fun SettingsScreen(navController: NavController) {
                     .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PrimaryGreen,
-                    contentColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Text(
                     text = "Cerrar Sesión",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
             }
         }
@@ -97,18 +124,79 @@ fun SettingsScreen(navController: NavController) {
 }
 
 @Composable
-private fun SettingsActionCard(title: String) {
+private fun PasswordChangeCard(
+    newPassword: String,
+    isSaving: Boolean,
+    successMessage: String?,
+    errorMessage: String?,
+    onPasswordChange: (String) -> Unit,
+    onChangePasswordClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = SettingsCardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Text(
-            text = title,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
-        )
+
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+
+            Text(
+                text = "Cambiar contraseña",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = onPasswordChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Nueva contraseña") },
+                singleLine = true
+            )
+
+            if (successMessage != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = successMessage,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = errorMessage,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Button(
+                onClick = onChangePasswordClick,
+                enabled = !isSaving,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
+            ) {
+                Text(
+                    text = if (isSaving) "Guardando..." else "Actualizar contraseña",
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
     }
 }
 
@@ -121,20 +209,26 @@ private fun SettingsSwitchCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = SettingsCardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+
             Text(
                 text = title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium)
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Medium
+                )
             )
+
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange
@@ -142,4 +236,3 @@ private fun SettingsSwitchCard(
         }
     }
 }
-
