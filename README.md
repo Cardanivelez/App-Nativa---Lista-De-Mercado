@@ -87,17 +87,6 @@ git clone https://github.com/Cardanivelez/App-Nativa---Lista-De-Mercado.git
 
 4. Ejecutar la app ▶️
 
----
-
-## 📸 Capturas (Opcional)
-
-Puedes agregar screenshots aquí:
-
-```
-/screenshots/home.png
-/screenshots/detail.png
-/screenshots/login.png
-```
 
 ---
 
@@ -133,22 +122,6 @@ Puedes agregar screenshots aquí:
 
 ---
 
-## 💡 Posibles Mejoras
-
-* ☁️ Integración con Firebase (auth + cloud)
-* 🖼️ Subida de imágenes
-* 🔔 Notificaciones
-* 📊 Estadísticas de compras
-* 🧠 Recomendaciones inteligentes
-
----
-
-## 👨‍💻 Autor
-
-**Danilo Velez**
-Proyecto académico – Ingeniería de Sistemas
-
----
 
 ## 📄 Licencia
 
