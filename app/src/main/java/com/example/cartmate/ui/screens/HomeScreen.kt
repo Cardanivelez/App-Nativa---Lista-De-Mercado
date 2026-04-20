@@ -1,5 +1,6 @@
 package com.example.cartmate.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -29,15 +30,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.cartmate.R
 import com.example.cartmate.data.local.model.ShoppingListWithProductCount
 import com.example.cartmate.data.session.UserSession
 import com.example.cartmate.navigation.AppRoutes
@@ -184,16 +188,30 @@ private fun HomeEmptyState(modifier: Modifier = Modifier) {
 
 @Composable
 private fun HomeHeader() {
-    Text(
-        text = "Mis Listas",
-        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold)
-    )
-    Spacer(modifier = Modifier.height(6.dp))
-    Text(
-        text = "Gestiona tus listas de compras",
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Mis Listas",
+                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Gestiona tus listas de compras",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Image(
+            painter = painterResource(id = R.drawable.app_icon),
+            contentDescription = "Logo AgoraList",
+            modifier = Modifier
+                .size(60.dp)
+                .clip(RoundedCornerShape(12.dp))
+        )
+    }
 }
 
 @Composable
