@@ -1,6 +1,6 @@
-# 🛒 CartMate – Aplicación de Lista de Mercado
+# 🛒 AgoraList – Aplicación de Lista de Mercado
 
-CartMate es una aplicación móvil desarrollada en **Android (Kotlin + Jetpack Compose)** que permite a los usuarios gestionar listas de compras de forma sencilla, intuitiva y moderna.
+AgoraList es una aplicación móvil desarrollada en **Android (Kotlin + Jetpack Compose)** que permite a los usuarios gestionar listas de compras de forma sencilla, intuitiva y moderna.
 
 ---
 
