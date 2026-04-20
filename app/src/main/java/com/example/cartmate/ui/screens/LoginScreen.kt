@@ -31,6 +31,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.cartmate.R
@@ -105,20 +108,32 @@ fun LoginScreen(navController: NavController) {
 
 @Composable
 private fun LoginHeader() {
-    Image(
-        painter = painterResource(id = R.drawable.app_icon),
-        contentDescription = "Logo AgoraList",
-        modifier = Modifier
-            .size(180.dp)
-            .clip(RoundedCornerShape(24.dp))
-    )
-    Spacer(modifier = Modifier.height(24.dp))
-    Text(
-        text = "Organiza tus compras facilmente",
-        style = MaterialTheme.typography.bodyLarge,
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.Center
-    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.size(280.dp)
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.app_icon),
+                contentDescription = "AgoraList Logo",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
+        }
+        
+        Text(
+            text = "Organiza tus compras fácilmente",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+            ),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+    }
 }
 
 @Composable
