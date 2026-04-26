@@ -118,7 +118,7 @@ fun AddProductScreen(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 OutlinedTextField(
                     value = uiState.quantity,
@@ -127,11 +127,20 @@ fun AddProductScreen(
                     shape = InputShape,
                     singleLine = true,
                     label = { Text("Cantidad") },
+                    isError = uiState.quantityError != null,
+                    supportingText = {
+                        if (uiState.quantityError != null) {
+                            Text(text = uiState.quantityError!!)
+                        }
+                    },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         focusedLabelColor = MaterialTheme.colorScheme.primary,
-                        cursorColor = MaterialTheme.colorScheme.primary
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        errorBorderColor = MaterialTheme.colorScheme.error,
+                        errorLabelColor = MaterialTheme.colorScheme.error,
+                        errorSupportingTextColor = MaterialTheme.colorScheme.error
                     )
                 )
 

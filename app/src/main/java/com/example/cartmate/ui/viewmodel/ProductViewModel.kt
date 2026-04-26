@@ -36,6 +36,7 @@ data class AddProductUiState(
     val editingProductId: Long? = null,
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
+    val quantityError: String? = null,
     val saveSuccess: Boolean = false
 )
 
@@ -120,7 +121,10 @@ class ProductViewModel(
     }
 
     fun onQuantityChange(value: String) {
-        _addProductUiState.update { it.copy(quantity = value, errorMessage = null) }
+        // Permitir solo números y un punto decimal mientras se escribe para mejorar la UX
+        if (value.isEmpty() || value.matches(Regex("""^\d*\.?\d*$"""))) {
+            _addProductUiState.update { it.copy(quantity = value, quantityError = null, errorMessage = null) }
+        }
     }
 
     fun onCategoryChange(category: UnitCategory) {
@@ -176,9 +180,21 @@ class ProductViewModel(
 
     fun saveProduct(listId: Long) {
         val state = _addProductUiState.value
-        if (state.name.isBlank() || state.quantity.isBlank()) {
+
+        var processedQuantity = state.quantity.trim()
+        if (processedQuantity.startsWith(".")) processedQuantity = "0$processedQuantity"
+        if (processedQuantity.endsWith(".")) processedQuantity = processedQuantity.removeSuffix(".")
+
+        val isQuantityValid = processedQuantity.isNotEmpty() && processedQuantity.toDoubleOrNull() != null
+
+        if (state.name.isBlank() || state.quantity.isBlank() || !isQuantityValid) {
             _addProductUiState.update {
-                it.copy(errorMessage = "Nombre y cantidad son obligatorios")
+                it.copy(
+                    errorMessage = if (state.name.isBlank()) "El nombre es obligatorio" else null,
+                    quantityError = if (state.quantity.isBlank()) "La cantidad es obligatoria"
+                                    else if (!isQuantityValid) "Debe ser un número válido (ej: 10 o 2.5)"
+                                    else null
+                )
             }
             return
         }
@@ -213,7 +229,7 @@ class ProductViewModel(
                 productRepository.updateProduct(
                     existing.copy(
                         name = state.name.trim(),
-                        quantity = state.quantity.trim(),
+                        quantity = processedQuantity,
                         unit = unitToSave,
                         notes = state.notes.trim(),
                         listId = listId
@@ -223,7 +239,7 @@ class ProductViewModel(
                 productRepository.insertProduct(
                     ProductEntity(
                         name = state.name.trim(),
-                        quantity = state.quantity.trim(),
+                        quantity = processedQuantity,
                         unit = unitToSave,
                         notes = state.notes.trim(),
                         listId = listId
@@ -247,7 +263,8 @@ class ProductViewModel(
                 notes = "",
                 isEditing = false,
                 editingProductId = null,
-                errorMessage = null
+                errorMessage = null,
+                quantityError = null
             )
         }
     }

@@ -45,7 +45,7 @@ fun CreditsScreen(navController: NavController) {
 
             CreditsInfoCard(
                 title = "Estudiantes",
-                value = "Carlos Danilo Vélez Castro y Mateo Ortiz Zapata"
+                value = "Carlos Danilo Vélez Castro\nMateo Ortiz Zapata"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
