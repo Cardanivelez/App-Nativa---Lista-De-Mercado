@@ -13,7 +13,7 @@ import com.example.cartmate.data.local.entity.UserEntity
 
 @Database(
     entities = [UserEntity::class, ShoppingListEntity::class, ProductEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

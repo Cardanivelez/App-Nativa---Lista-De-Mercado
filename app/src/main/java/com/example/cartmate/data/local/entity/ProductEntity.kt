@@ -25,6 +25,8 @@ data class ProductEntity(
     val name: String,
     @ColumnInfo(name = "quantity")
     val quantity: String,
+    @ColumnInfo(name = "unit")
+    val unit: String = "",
     @ColumnInfo(name = "notes")
     val notes: String = "",
     @ColumnInfo(name = "is_checked")

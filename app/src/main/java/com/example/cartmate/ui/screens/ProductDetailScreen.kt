@@ -78,7 +78,7 @@ fun ProductDetailScreen(
                 ProductDetailCard("Nombre del producto", product.name)
                 Spacer(modifier = Modifier.height(12.dp))
 
-                ProductDetailCard("Cantidad", product.quantity)
+                ProductDetailCard("Cantidad", if (product.unit.isBlank()) product.quantity else "${product.quantity} ${product.unit}")
                 Spacer(modifier = Modifier.height(12.dp))
 
                 ProductDetailCard(

@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.cartmate.data.local.entity.ProductEntity
+import com.example.cartmate.data.local.model.ProductUnit
+import com.example.cartmate.data.local.model.UnitCategory
 import com.example.cartmate.data.repository.ProductRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +27,10 @@ data class ProductDetailUiState(
 data class AddProductUiState(
     val name: String = "",
     val quantity: String = "",
+    val unit: String = "",
+    val selectedCategory: UnitCategory = UnitCategory.COUNT,
+    val selectedUnit: ProductUnit = ProductUnit.UNIT,
+    val customUnit: String = "",
     val notes: String = "",
     val isEditing: Boolean = false,
     val editingProductId: Long? = null,
@@ -117,6 +123,21 @@ class ProductViewModel(
         _addProductUiState.update { it.copy(quantity = value, errorMessage = null) }
     }
 
+    fun onCategoryChange(category: UnitCategory) {
+        _addProductUiState.update {
+            val defaultUnit = ProductUnit.entries.find { it.category == category } ?: ProductUnit.UNIT
+            it.copy(selectedCategory = category, selectedUnit = defaultUnit, errorMessage = null)
+        }
+    }
+
+    fun onUnitChange(unit: ProductUnit) {
+        _addProductUiState.update { it.copy(selectedUnit = unit, errorMessage = null) }
+    }
+
+    fun onCustomUnitChange(value: String) {
+        _addProductUiState.update { it.copy(customUnit = value, errorMessage = null) }
+    }
+
     fun onNotesChange(value: String) {
         _addProductUiState.update { it.copy(notes = value, errorMessage = null) }
     }
@@ -129,9 +150,18 @@ class ProductViewModel(
             }
             val existing = productRepository.getProductById(productId)
             if (existing != null) {
+                val unitObj = ProductUnit.fromSymbol(existing.unit)
+                val category = unitObj?.category ?: if (existing.unit.isNotBlank()) UnitCategory.OTHER else UnitCategory.COUNT
+                val selectedUnit = unitObj ?: ProductUnit.OTHER
+                val customUnit = if (unitObj == null) existing.unit else ""
+
                 _addProductUiState.value = AddProductUiState(
                     name = existing.name,
                     quantity = existing.quantity,
+                    unit = existing.unit,
+                    selectedCategory = category,
+                    selectedUnit = selectedUnit,
+                    customUnit = customUnit,
                     notes = existing.notes,
                     isEditing = true,
                     editingProductId = existing.id
@@ -152,6 +182,20 @@ class ProductViewModel(
             }
             return
         }
+
+        val unitToSave = if (state.selectedCategory == UnitCategory.OTHER) {
+            state.customUnit.trim()
+        } else {
+            state.selectedUnit.symbol
+        }
+
+        if (state.selectedCategory == UnitCategory.OTHER && unitToSave.isBlank()) {
+            _addProductUiState.update {
+                it.copy(errorMessage = "Especifique el tipo de unidad")
+            }
+            return
+        }
+
         viewModelScope.launch {
             _addProductUiState.update { it.copy(isSaving = true, errorMessage = null) }
             val editingId = state.editingProductId
@@ -170,6 +214,7 @@ class ProductViewModel(
                     existing.copy(
                         name = state.name.trim(),
                         quantity = state.quantity.trim(),
+                        unit = unitToSave,
                         notes = state.notes.trim(),
                         listId = listId
                     )
@@ -179,6 +224,7 @@ class ProductViewModel(
                     ProductEntity(
                         name = state.name.trim(),
                         quantity = state.quantity.trim(),
+                        unit = unitToSave,
                         notes = state.notes.trim(),
                         listId = listId
                     )
@@ -194,6 +240,10 @@ class ProductViewModel(
                 saveSuccess = false,
                 name = "",
                 quantity = "",
+                unit = "",
+                selectedCategory = UnitCategory.COUNT,
+                selectedUnit = ProductUnit.UNIT,
+                customUnit = "",
                 notes = "",
                 isEditing = false,
                 editingProductId = null,

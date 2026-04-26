@@ -224,7 +224,7 @@ private fun ProductCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    product.quantity,
+                    if (product.unit.isBlank()) product.quantity else "${product.quantity} ${product.unit}",
                     textDecoration = line
                 )
             }
