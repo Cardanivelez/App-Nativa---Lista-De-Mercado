@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.animation.*
@@ -76,6 +77,25 @@ fun DetailScreen(
         ) {
 
             ListCompletedBanner(uiState.isListCompleted)
+
+            if (uiState.isListCompleted) {
+                Button(
+                    onClick = { productViewModel.restartList(listId) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.tertiary,
+                        contentColor = MaterialTheme.colorScheme.onTertiary
+                    )
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reiniciar Lista")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             if (uiState.products.isEmpty()) {
                 Box(

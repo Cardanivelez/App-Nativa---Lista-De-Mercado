@@ -1,14 +1,20 @@
 package com.example.cartmate.data.repository
 
 import com.example.cartmate.data.local.dao.ProductDao
+import com.example.cartmate.data.local.dao.ProductHistoryDao
 import com.example.cartmate.data.local.entity.ProductEntity
+import com.example.cartmate.data.local.entity.ProductHistoryEntity
 import kotlinx.coroutines.flow.Flow
 
 class ProductRepository(
-    private val productDao: ProductDao
+    private val productDao: ProductDao,
+    private val productHistoryDao: ProductHistoryDao
 ) {
     fun getProductsByListId(listId: Long): Flow<List<ProductEntity>> =
         productDao.getProductsByListId(listId)
+
+    suspend fun getProductsByListIdOnce(listId: Long): List<ProductEntity> =
+        productDao.getProductsByListIdOnce(listId)
 
     suspend fun getProductById(productId: Long): ProductEntity? =
         productDao.getProductById(productId)
@@ -27,4 +33,17 @@ class ProductRepository(
 
     suspend fun updateCheckedState(productId: Long, checked: Boolean) =
         productDao.updateCheckedState(productId, checked)
+
+    suspend fun uncheckAllProducts(listId: Long) =
+        productDao.uncheckAllProducts(listId)
+
+    // History methods
+    suspend fun insertHistory(history: ProductHistoryEntity) =
+        productHistoryDao.insertHistory(history)
+
+    fun getUniqueHistoricalProducts(userId: Long) =
+        productHistoryDao.getUniqueHistoricalProducts(userId)
+
+    fun getHistoryForProduct(userId: Long, name: String, category: String, unitName: String) =
+        productHistoryDao.getHistoryForProduct(userId, name, category, unitName)
 }

@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.cartmate.data.local.entity.ProductEntity
+import com.example.cartmate.data.local.entity.ProductHistoryEntity
 import com.example.cartmate.data.local.model.ProductUnit
 import com.example.cartmate.data.local.model.UnitCategory
 import com.example.cartmate.data.repository.ProductRepository
 import com.example.cartmate.data.repository.ShoppingListRepository
+import com.example.cartmate.data.session.UserSession
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -90,10 +92,55 @@ class ProductViewModel(
             val list = shoppingListRepository.getListById(listId)
             if (list != null && !list.isCompleted) {
                 shoppingListRepository.updateList(list.copy(isCompleted = true))
+                
+                // Guardar histórico
+                val products = productRepository.getProductsByListIdOnce(listId)
+                val userId = UserSession.currentUser.value?.id ?: 0L
+
+                products.filter { it.isChecked && it.price != null }.forEach { product ->
+                    val unit = ProductUnit.fromSymbol(product.unit) ?: ProductUnit.OTHER
+                    val quantityDouble = product.quantity.toDoubleOrNull() ?: 1.0
+
+                    // Precio por unidad base (gramo, ml o unidad)
+                    val pricePerBaseUnit = (product.price!! / quantityDouble) / unit.factor
+
+                    productRepository.insertHistory(
+                        ProductHistoryEntity(
+                            name = product.name,
+                            category = unit.category.name,
+                            unitName = if (unit == ProductUnit.OTHER) product.unit else "",
+                            pricePerBaseUnit = pricePerBaseUnit,
+                            currency = product.currency,
+                            timestamp = System.currentTimeMillis(),
+                            userId = userId
+                        )
+                    )
+                }
+
                 _detailUiState.update {
                     it.copy(
                         isListCompleted = true,
                         listCompletionCelebration = true
+                    )
+                }
+            }
+        }
+    }
+
+    fun restartList(listId: Long) {
+        viewModelScope.launch {
+            val list = shoppingListRepository.getListById(listId)
+            if (list != null && list.isCompleted) {
+                // Desmarcar la lista en la DB
+                shoppingListRepository.updateList(list.copy(isCompleted = false))
+                
+                // Desmarcar todos los productos para empezar de nuevo
+                productRepository.uncheckAllProducts(listId)
+
+                _detailUiState.update {
+                    it.copy(
+                        isListCompleted = false,
+                        listCompletionCelebration = false
                     )
                 }
             }

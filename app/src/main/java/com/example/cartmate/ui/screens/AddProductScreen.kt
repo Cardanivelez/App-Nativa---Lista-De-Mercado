@@ -272,12 +272,12 @@ fun AddProductScreen(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 var currencyExpanded by remember { mutableStateOf(false) }
-                val currencies = listOf("$", "€", "£", "COP", "MXN", "USD")
+                val currencies = listOf("$", "€", "£", "¥", "₩", "₽", "฿")
 
                 ExposedDropdownMenuBox(
                     expanded = currencyExpanded,
                     onExpandedChange = { currencyExpanded = !currencyExpanded },
-                    modifier = Modifier.width(110.dp)
+                    modifier = Modifier.width(100.dp)
                 ) {
                     OutlinedTextField(
                         value = uiState.currency,

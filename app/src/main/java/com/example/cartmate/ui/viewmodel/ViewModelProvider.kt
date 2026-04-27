@@ -23,7 +23,7 @@ object ViewModelProvider {
 
     fun provideProductViewModelFactory(context: Context): ProductViewModel.Factory {
         val db = AppDatabase.getInstance(context)
-        val productRepository = ProductRepository(db.productDao())
+        val productRepository = ProductRepository(db.productDao(), db.productHistoryDao())
         val shoppingListRepository = ShoppingListRepository(db.shoppingListDao())
         return ProductViewModel.Factory(productRepository, shoppingListRepository)
     }
@@ -43,5 +43,11 @@ object ViewModelProvider {
     fun provideThemeViewModelFactory(context: Context): ThemeViewModel.Factory {
         val themeRepository = ThemeRepository(ThemePreferences(context.applicationContext))
         return ThemeViewModel.Factory(themeRepository)
+    }
+
+    fun provideFinanzasViewModelFactory(context: Context): FinanzasViewModel.Factory {
+        val db = AppDatabase.getInstance(context)
+        val productRepository = ProductRepository(db.productDao(), db.productHistoryDao())
+        return FinanzasViewModel.Factory(productRepository)
     }
 }
