@@ -182,8 +182,9 @@ fun AddProductScreen(
                 }
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
             if (uiState.selectedCategory != UnitCategory.OTHER) {
-                Spacer(modifier = Modifier.height(16.dp))
                 var unitExpanded by remember { mutableStateOf(false) }
                 val unitsInCategory = ProductUnit.entries.filter { it.category == uiState.selectedCategory }
 
@@ -223,7 +224,6 @@ fun AddProductScreen(
                     }
                 }
             } else {
-                Spacer(modifier = Modifier.height(16.dp))
                 OutlinedTextField(
                     value = uiState.customUnit,
                     onValueChange = productViewModel::onCustomUnitChange,
@@ -237,6 +237,76 @@ fun AddProductScreen(
                         cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                OutlinedTextField(
+                    value = uiState.price,
+                    onValueChange = productViewModel::onPriceChange,
+                    modifier = Modifier.weight(1f),
+                    shape = InputShape,
+                    singleLine = true,
+                    label = { Text("Precio (opcional)") },
+                    isError = uiState.priceError != null,
+                    supportingText = {
+                        if (uiState.priceError != null) {
+                            Text(text = uiState.priceError!!)
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        errorBorderColor = MaterialTheme.colorScheme.error,
+                        errorLabelColor = MaterialTheme.colorScheme.error,
+                        errorSupportingTextColor = MaterialTheme.colorScheme.error
+                    )
+                )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                var currencyExpanded by remember { mutableStateOf(false) }
+                val currencies = listOf("$", "€", "£", "COP", "MXN", "USD")
+
+                ExposedDropdownMenuBox(
+                    expanded = currencyExpanded,
+                    onExpandedChange = { currencyExpanded = !currencyExpanded },
+                    modifier = Modifier.width(110.dp)
+                ) {
+                    OutlinedTextField(
+                        value = uiState.currency,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Moneda") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = currencyExpanded) },
+                        modifier = Modifier.menuAnchor(),
+                        shape = InputShape,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = currencyExpanded,
+                        onDismissRequest = { currencyExpanded = false }
+                    ) {
+                        currencies.forEach { currency ->
+                            DropdownMenuItem(
+                                text = { Text(currency) },
+                                onClick = {
+                                    productViewModel.onCurrencyChange(currency)
+                                    currencyExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

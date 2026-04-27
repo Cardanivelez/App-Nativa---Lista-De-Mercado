@@ -24,7 +24,8 @@ object ViewModelProvider {
     fun provideProductViewModelFactory(context: Context): ProductViewModel.Factory {
         val db = AppDatabase.getInstance(context)
         val productRepository = ProductRepository(db.productDao())
-        return ProductViewModel.Factory(productRepository)
+        val shoppingListRepository = ShoppingListRepository(db.shoppingListDao())
+        return ProductViewModel.Factory(productRepository, shoppingListRepository)
     }
 
     fun provideProfileViewModelFactory(context: Context): ProfileViewModel.Factory {

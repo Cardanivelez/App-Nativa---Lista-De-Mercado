@@ -27,6 +27,10 @@ data class ProductEntity(
     val quantity: String,
     @ColumnInfo(name = "unit")
     val unit: String = "",
+    @ColumnInfo(name = "price")
+    val price: Double? = null,
+    @ColumnInfo(name = "currency")
+    val currency: String = "$",
     @ColumnInfo(name = "notes")
     val notes: String = "",
     @ColumnInfo(name = "is_checked")

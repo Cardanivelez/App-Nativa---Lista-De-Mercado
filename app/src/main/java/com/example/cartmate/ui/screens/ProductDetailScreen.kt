@@ -81,6 +81,11 @@ fun ProductDetailScreen(
                 ProductDetailCard("Cantidad", if (product.unit.isBlank()) product.quantity else "${product.quantity} ${product.unit}")
                 Spacer(modifier = Modifier.height(12.dp))
 
+                if (product.price != null) {
+                    ProductDetailCard("Precio", "${product.currency}${String.format("%.2f", product.price)}")
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
                 ProductDetailCard(
                     "Notas",
                     if (product.notes.isBlank()) "Sin notas" else product.notes

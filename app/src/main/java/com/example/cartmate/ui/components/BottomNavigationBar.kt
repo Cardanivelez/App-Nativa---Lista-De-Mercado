@@ -2,6 +2,7 @@ package com.example.cartmate.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import com.example.cartmate.navigation.AppRoutes
 
 private data class BottomTab(
     val label: String,
@@ -32,10 +34,11 @@ fun BottomNavigationBar(
     currentRoute: String
 ) {
     val tabs = listOf(
-        BottomTab("Inicio", "home", Icons.Default.Home),
-        BottomTab("Perfil", "profile", Icons.Default.Person),
-        BottomTab("Configuración", "settings", Icons.Default.Settings),
-        BottomTab("Créditos", "credits", Icons.Default.Info)
+        BottomTab("Inicio", AppRoutes.HOME, Icons.Default.Home),
+        BottomTab("Finanzas", AppRoutes.FINANZAS, Icons.Default.AccountBalance),
+        BottomTab("Perfil", AppRoutes.PROFILE, Icons.Default.Person),
+        BottomTab("Ajustes", AppRoutes.SETTINGS, Icons.Default.Settings),
+        BottomTab("Créditos", AppRoutes.CREDITS, Icons.Default.Info)
     )
 
     NavigationBar {

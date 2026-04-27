@@ -75,7 +75,7 @@ fun DetailScreen(
                 .padding(24.dp)
         ) {
 
-            ListCompletedBanner(uiState.listCompletionCelebration)
+            ListCompletedBanner(uiState.isListCompleted)
 
             if (uiState.products.isEmpty()) {
                 Box(
@@ -96,22 +96,27 @@ fun DetailScreen(
                     items(uiState.products, key = { it.id }) { product ->
                         ProductCard(
                             product = product,
+                            isListCompleted = uiState.isListCompleted,
                             onCheckedChange = {
-                                productViewModel.updateCheckedState(product.id, it)
+                                if (!uiState.isListCompleted) {
+                                    productViewModel.updateCheckedState(product.id, it)
+                                }
                             },
                             onClick = {
                                 navController.navigate("productDetail/${product.id}")
                             },
                             onDelete = {
-                                val snapshot = product
-                                scope.launch {
-                                    productViewModel.deleteProduct(snapshot)
-                                    val result = snackbarHostState.showSnackbar(
-                                        "Producto eliminado",
-                                        "Deshacer"
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        productViewModel.restoreProductAfterUndo(snapshot)
+                                if (!uiState.isListCompleted) {
+                                    val snapshot = product
+                                    scope.launch {
+                                        productViewModel.deleteProduct(snapshot)
+                                        val result = snackbarHostState.showSnackbar(
+                                            "Producto eliminado",
+                                            "Deshacer"
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            productViewModel.restoreProductAfterUndo(snapshot)
+                                        }
                                     }
                                 }
                             }
@@ -122,10 +127,32 @@ fun DetailScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (!uiState.isListCompleted && uiState.products.isNotEmpty()) {
+                val hasSelection = uiState.products.any { it.isChecked }
+                Button(
+                    onClick = { productViewModel.completeList(listId) },
+                    enabled = hasSelection,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary
+                    )
+                ) {
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Finalizar Compra")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             Button(
                 onClick = {
                     navController.navigate(AppRoutes.addProductRoute(listId))
                 },
+                enabled = !uiState.isListCompleted,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp),
@@ -190,6 +217,7 @@ private fun ListCompletedBanner(visible: Boolean) {
 @Composable
 private fun ProductCard(
     product: ProductEntity,
+    isListCompleted: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     onClick: () -> Unit,
     onDelete: () -> Unit
@@ -210,27 +238,48 @@ private fun ProductCard(
 
             Checkbox(
                 checked = product.isChecked,
-                onCheckedChange = onCheckedChange
+                onCheckedChange = onCheckedChange,
+                enabled = !isListCompleted
             )
 
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onClick() }
+                    .then(if (!isListCompleted) Modifier.clickable { onClick() } else Modifier)
             ) {
                 Text(
                     product.name,
                     textDecoration = line,
                     fontWeight = FontWeight.SemiBold
                 )
-                Text(
-                    if (product.unit.isBlank()) product.quantity else "${product.quantity} ${product.unit}",
-                    textDecoration = line
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        if (product.unit.isBlank()) product.quantity else "${product.quantity} ${product.unit}",
+                        textDecoration = line,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    if (product.price != null) {
+                        Text(
+                            " • ${product.currency}${String.format("%.2f", product.price)}",
+                            textDecoration = line,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                if (isListCompleted && !product.isChecked) {
+                    Text(
+                        "Pendiente",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                }
             }
 
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = null)
+            if (!isListCompleted) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = null)
+                }
             }
         }
     }

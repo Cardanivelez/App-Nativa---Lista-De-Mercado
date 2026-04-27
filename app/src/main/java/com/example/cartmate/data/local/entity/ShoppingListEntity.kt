@@ -25,6 +25,8 @@ data class ShoppingListEntity(
     val name: String,
     @ColumnInfo(name = "icon")
     val icon: String? = null,
+    @ColumnInfo(name = "is_completed")
+    val isCompleted: Boolean = false,
     @ColumnInfo(name = "user_id")
     val userId: Long
 )

@@ -7,6 +7,7 @@ import com.example.cartmate.data.local.entity.ProductEntity
 import com.example.cartmate.data.local.model.ProductUnit
 import com.example.cartmate.data.local.model.UnitCategory
 import com.example.cartmate.data.repository.ProductRepository
+import com.example.cartmate.data.repository.ShoppingListRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 
 data class DetailUiState(
     val products: List<ProductEntity> = emptyList(),
+    val isListCompleted: Boolean = false,
     /** True after transition to “all checked”; cleared when list incomplete or [consumeListCompletionCelebration]. */
     val listCompletionCelebration: Boolean = false
 )
@@ -28,6 +30,8 @@ data class AddProductUiState(
     val name: String = "",
     val quantity: String = "",
     val unit: String = "",
+    val price: String = "",
+    val currency: String = "$",
     val selectedCategory: UnitCategory = UnitCategory.COUNT,
     val selectedUnit: ProductUnit = ProductUnit.UNIT,
     val customUnit: String = "",
@@ -37,11 +41,13 @@ data class AddProductUiState(
     val isSaving: Boolean = false,
     val errorMessage: String? = null,
     val quantityError: String? = null,
+    val priceError: String? = null,
     val saveSuccess: Boolean = false
 )
 
 class ProductViewModel(
-    private val productRepository: ProductRepository
+    private val productRepository: ProductRepository,
+    private val shoppingListRepository: ShoppingListRepository
 ) : ViewModel() {
     private val _detailUiState = MutableStateFlow(DetailUiState())
     val detailUiState: StateFlow<DetailUiState> = _detailUiState.asStateFlow()
@@ -53,6 +59,7 @@ class ProductViewModel(
 
     private var observeProductsJob: Job? = null
     private var observedListId: Long? = null
+    private var observeListStatusJob: Job? = null
     private var observeProductDetailJob: Job? = null
     private var observedProductId: Long? = null
 
@@ -60,20 +67,33 @@ class ProductViewModel(
         if (observedListId == listId && observeProductsJob != null) return
         observedListId = listId
         observeProductsJob?.cancel()
+        observeListStatusJob?.cancel()
+
         observeProductsJob = viewModelScope.launch {
-            var initialized = false
-            var prevAllChecked = false
             productRepository.getProductsByListId(listId).collect { products ->
-                val allChecked = products.isNotEmpty() && products.all { it.isChecked }
-                val fireCelebration = initialized && allChecked && !prevAllChecked
-                prevAllChecked = allChecked
-                initialized = true
                 _detailUiState.update { state ->
-                    val celebration =
-                        allChecked && (fireCelebration || state.listCompletionCelebration)
-                    state.copy(
-                        products = products,
-                        listCompletionCelebration = celebration
+                    state.copy(products = products)
+                }
+            }
+        }
+
+        observeListStatusJob = viewModelScope.launch {
+            // No hay flow para una sola lista por ID en el repo actual, pero podemos consultar o crear uno.
+            // Para simplificar, consultaremos el estado de la lista.
+            val list = shoppingListRepository.getListById(listId)
+            _detailUiState.update { it.copy(isListCompleted = list?.isCompleted ?: false) }
+        }
+    }
+
+    fun completeList(listId: Long) {
+        viewModelScope.launch {
+            val list = shoppingListRepository.getListById(listId)
+            if (list != null && !list.isCompleted) {
+                shoppingListRepository.updateList(list.copy(isCompleted = true))
+                _detailUiState.update {
+                    it.copy(
+                        isListCompleted = true,
+                        listCompletionCelebration = true
                     )
                 }
             }
@@ -142,6 +162,16 @@ class ProductViewModel(
         _addProductUiState.update { it.copy(customUnit = value, errorMessage = null) }
     }
 
+    fun onPriceChange(value: String) {
+        if (value.isEmpty() || value.matches(Regex("""^\d*[.,]?\d{0,2}$"""))) {
+            _addProductUiState.update { it.copy(price = value.replace(",", "."), priceError = null, errorMessage = null) }
+        }
+    }
+
+    fun onCurrencyChange(value: String) {
+        _addProductUiState.update { it.copy(currency = value, errorMessage = null) }
+    }
+
     fun onNotesChange(value: String) {
         _addProductUiState.update { it.copy(notes = value, errorMessage = null) }
     }
@@ -163,6 +193,8 @@ class ProductViewModel(
                     name = existing.name,
                     quantity = existing.quantity,
                     unit = existing.unit,
+                    price = existing.price?.toString() ?: "",
+                    currency = existing.currency,
                     selectedCategory = category,
                     selectedUnit = selectedUnit,
                     customUnit = customUnit,
@@ -186,14 +218,18 @@ class ProductViewModel(
         if (processedQuantity.endsWith(".")) processedQuantity = processedQuantity.removeSuffix(".")
 
         val isQuantityValid = processedQuantity.isNotEmpty() && processedQuantity.toDoubleOrNull() != null
+        
+        val priceDouble = state.price.toDoubleOrNull()
+        val isPriceValid = state.price.isEmpty() || priceDouble != null
 
-        if (state.name.isBlank() || state.quantity.isBlank() || !isQuantityValid) {
+        if (state.name.isBlank() || state.quantity.isBlank() || !isQuantityValid || !isPriceValid) {
             _addProductUiState.update {
                 it.copy(
                     errorMessage = if (state.name.isBlank()) "El nombre es obligatorio" else null,
                     quantityError = if (state.quantity.isBlank()) "La cantidad es obligatoria"
                                     else if (!isQuantityValid) "Debe ser un número válido (ej: 10 o 2.5)"
-                                    else null
+                                    else null,
+                    priceError = if (!isPriceValid) "Precio inválido" else null
                 )
             }
             return
@@ -231,6 +267,8 @@ class ProductViewModel(
                         name = state.name.trim(),
                         quantity = processedQuantity,
                         unit = unitToSave,
+                        price = priceDouble,
+                        currency = state.currency.trim(),
                         notes = state.notes.trim(),
                         listId = listId
                     )
@@ -241,6 +279,8 @@ class ProductViewModel(
                         name = state.name.trim(),
                         quantity = processedQuantity,
                         unit = unitToSave,
+                        price = priceDouble,
+                        currency = state.currency.trim(),
                         notes = state.notes.trim(),
                         listId = listId
                     )
@@ -257,6 +297,8 @@ class ProductViewModel(
                 name = "",
                 quantity = "",
                 unit = "",
+                price = "",
+                currency = "$",
                 selectedCategory = UnitCategory.COUNT,
                 selectedUnit = ProductUnit.UNIT,
                 customUnit = "",
@@ -264,18 +306,20 @@ class ProductViewModel(
                 isEditing = false,
                 editingProductId = null,
                 errorMessage = null,
-                quantityError = null
+                quantityError = null,
+                priceError = null
             )
         }
     }
 
     class Factory(
-        private val productRepository: ProductRepository
+        private val productRepository: ProductRepository,
+        private val shoppingListRepository: ShoppingListRepository
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(ProductViewModel::class.java)) {
-                return ProductViewModel(productRepository) as T
+                return ProductViewModel(productRepository, shoppingListRepository) as T
             }
             throw IllegalArgumentException("Unknown ViewModel class")
         }

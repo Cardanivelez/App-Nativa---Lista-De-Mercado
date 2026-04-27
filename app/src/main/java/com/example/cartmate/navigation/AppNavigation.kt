@@ -27,6 +27,7 @@ import com.example.cartmate.ui.screens.AddProductScreen
 import com.example.cartmate.ui.screens.CreditsScreen
 import com.example.cartmate.ui.screens.CreateListScreen
 import com.example.cartmate.ui.screens.DetailScreen
+import com.example.cartmate.ui.screens.FinanzasScreen
 import com.example.cartmate.ui.screens.HomeScreen
 import com.example.cartmate.ui.screens.LoginScreen
 import com.example.cartmate.ui.screens.ProfileScreen
@@ -52,6 +53,7 @@ object AppRoutes {
         "addProduct/$listId/$productId"
     const val PROFILE = "profile"
     const val SETTINGS = "settings"
+    const val FINANZAS = "finanzas"
     const val CREDITS = "credits"
 }
 
@@ -178,6 +180,16 @@ fun AppNavigation() {
                 popExitTransition = bottomTabPopExit
             ) {
                 SettingsScreen(navController)
+            }
+
+            composable(
+                route = AppRoutes.FINANZAS,
+                enterTransition = bottomTabEnter,
+                exitTransition = bottomTabExit,
+                popEnterTransition = bottomTabPopEnter,
+                popExitTransition = bottomTabPopExit
+            ) {
+                FinanzasScreen(navController)
             }
 
             composable(
