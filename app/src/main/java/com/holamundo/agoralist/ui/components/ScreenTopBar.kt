@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun ScreenTopBar(
     title: String,
-    onBackClick: () -> Unit
+    onBackClick: (() -> Unit)? = null
 ) {
     TopAppBar(
         title = {
@@ -27,12 +27,14 @@ fun ScreenTopBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    imageVector = Icons.Default.ArrowBack,
-                    contentDescription = "Volver",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            if (onBackClick != null) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.Default.ArrowBack,
+                        contentDescription = "Volver",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     )

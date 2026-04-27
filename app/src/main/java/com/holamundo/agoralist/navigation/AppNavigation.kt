@@ -34,6 +34,7 @@ import com.holamundo.agoralist.ui.screens.ProfileScreen
 import com.holamundo.agoralist.ui.screens.ProductDetailScreen
 import com.holamundo.agoralist.ui.screens.RegisterScreen
 import com.holamundo.agoralist.ui.screens.SettingsScreen
+import com.holamundo.agoralist.ui.screens.TermsScreen
 
 object AppRoutes {
     const val LOGIN = "login"
@@ -55,6 +56,7 @@ object AppRoutes {
     const val SETTINGS = "settings"
     const val FINANZAS = "finanzas"
     const val CREDITS = "credits"
+    const val TERMS = "terms"
 }
 
 private const val NavAnimMs = 280
@@ -200,6 +202,10 @@ fun AppNavigation() {
                 popExitTransition = bottomTabPopExit
             ) {
                 CreditsScreen(navController)
+            }
+
+            composable(AppRoutes.TERMS) {
+                TermsScreen(navController)
             }
         }
     }

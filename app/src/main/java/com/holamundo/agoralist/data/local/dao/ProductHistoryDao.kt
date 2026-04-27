@@ -17,7 +17,7 @@ interface ProductHistoryDao {
     @Query("SELECT * FROM product_history WHERE user_id = :userId AND LOWER(name) = LOWER(:name) AND category = :category AND LOWER(unit_name) = LOWER(:unitName) ORDER BY timestamp ASC")
     fun getHistoryForProduct(userId: Long, name: String, category: String, unitName: String): Flow<List<ProductHistoryEntity>>
 
-    @Query("SELECT DISTINCT name, category, unit_name FROM product_history WHERE user_id = :userId")
+    @Query("SELECT name, category, unit_name FROM product_history WHERE user_id = :userId GROUP BY LOWER(name), category, LOWER(unit_name)")
     fun getUniqueHistoricalProducts(userId: Long): Flow<List<HistoricalProduct>>
 }
 

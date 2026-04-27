@@ -72,22 +72,6 @@ fun SettingsScreen(navController: NavController) {
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(100.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_icon),
-                    contentDescription = "AgoraList",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "Configuración",
                 style = MaterialTheme.typography.headlineMedium.copy(

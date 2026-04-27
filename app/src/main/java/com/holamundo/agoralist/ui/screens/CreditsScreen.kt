@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.holamundo.agoralist.navigation.AppRoutes
 import com.holamundo.agoralist.ui.components.BottomNavigationBar
 
 @Composable
@@ -38,7 +40,10 @@ fun CreditsScreen(navController: NavController) {
         ) {
             Text(
                 text = "Créditos",
-                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -60,6 +65,16 @@ fun CreditsScreen(navController: NavController) {
             CreditsDescriptionCard(
                 description = "Aplicación móvil desarrollada como proyecto académico para gestionar listas de compras."
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            OutlinedButton(
+                onClick = { navController.navigate(AppRoutes.TERMS) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Ver Términos y Condiciones")
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 

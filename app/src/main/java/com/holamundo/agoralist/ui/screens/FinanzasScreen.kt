@@ -47,24 +47,36 @@ fun FinanzasScreen(navController: NavController) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            ScreenTopBar(
-                title = if (uiState.selectedProductName != null) uiState.selectedProductName!! else "Finanzas",
-                onBackClick = {
-                    if (uiState.selectedProductName != null) {
-                        viewModel.deselectProduct()
-                    } else {
-                        navController.popBackStack()
-                    }
-                }
-            )
+            if (uiState.selectedProductName != null) {
+                ScreenTopBar(
+                    title = uiState.selectedProductName!!,
+                    onBackClick = { viewModel.deselectProduct() }
+                )
+            }
         },
         bottomBar = {
             BottomNavigationBar(navController = navController, currentRoute = "finanzas")
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 24.dp, vertical = 20.dp)
+        ) {
             if (uiState.selectedProductName == null) {
-                HistoryProductList(uiState.historicalProducts) {
+                Text(
+                    text = "Finanzas",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                HistoryProductList(
+                    products = uiState.historicalProducts,
+                    modifier = Modifier.weight(1f)
+                ) {
                     viewModel.selectProduct(it)
                 }
             } else {
@@ -79,14 +91,18 @@ fun FinanzasScreen(navController: NavController) {
 }
 
 @Composable
-fun HistoryProductList(products: List<HistoricalProduct>, onSelect: (HistoricalProduct) -> Unit) {
+fun HistoryProductList(
+    products: List<HistoricalProduct>,
+    modifier: Modifier = Modifier,
+    onSelect: (HistoricalProduct) -> Unit
+) {
     if (products.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("No hay datos históricos disponibles.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(16.dp),
+            modifier = modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(products) { product ->
@@ -136,7 +152,8 @@ fun ProductHistoryDetail(history: List<ProductHistoryEntity>, category: String, 
         Text(
             "Historial de precio por $displayUnit",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -162,7 +179,7 @@ fun ProductHistoryDetail(history: List<ProductHistoryEntity>, category: String, 
                 ) {
                     val date = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(entry.timestamp))
                     Text(date)
-                    Text("${entry.currency}${String.format("%.2f", entry.pricePerBaseUnit * multiplier)}", fontWeight = FontWeight.Bold)
+                    Text("${entry.currency}${String.format(Locale.getDefault(), "%.2f", entry.pricePerBaseUnit * multiplier)}", fontWeight = FontWeight.Bold)
                 }
             }
         }

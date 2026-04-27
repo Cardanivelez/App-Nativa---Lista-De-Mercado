@@ -76,22 +76,6 @@ fun ProfileScreen(navController: NavController) {
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(120.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_icon),
-                    contentDescription = "AgoraList",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
             Text(
                 text = "Mi Perfil",
                 style = MaterialTheme.typography.headlineMedium.copy(
