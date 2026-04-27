@@ -49,7 +49,7 @@ El proyecto sigue una arquitectura limpia basada en:
 * Separación por capas:
 
 ```
-com.example.cartmate
+com.holamundo.agoralist
 │
 ├── data            # Base de datos (Room)
 ├── navigation      # Navegación entre pantallas
